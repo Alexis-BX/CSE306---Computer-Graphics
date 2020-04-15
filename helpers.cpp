@@ -72,14 +72,11 @@ Vector intersect(Sphere s, Ray r){
     t = -t;
 
     Vector nothing(0,0,0);
-    if (delta<0) return nothing;
+    if (delta<0 || t<0) return nothing;
 
     if (delta == 0.){
-        if (t<0) return nothing;
         return r.p + t*r.d;
     }
-
-    if(t<0) return nothing;
 
     delta = sqrt(delta);
     if (t<delta){
@@ -178,27 +175,46 @@ Vector mirorSurface(Vector p, int si, Vector light, int I, int depth, Vector pre
         return getColor(best.inter, best.i, light, I, depth, p);
 }
 
+Vector intersectSelf(Sphere s, Ray r){
+    Vector tmp = r.p-s.p;
+    double t = dot(r.d, tmp);
+    double delta = t*t;
+    delta -= (norm(tmp)*norm(tmp) - s.R*s.R);
+    t = -t;
+
+    Vector nothing(0,0,0);
+    if (delta<0 || t<0) return nothing;
+
+    if (delta == 0.){
+        return r.p + t*r.d;
+    }
+
+    delta = sqrt(delta);
+    t += delta;
+
+    return r.p + t*r.d;
+}
+
 Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous){
-    if (depth<=0) return Vector(100,200,0);
+    if (depth<=0) return Vector(0,0,0);
     depth -= 1;
     
     Vector omegaI = p-previous;
     omegaI = omegaI/norm(omegaI);
     Vector n = normalSatP(p, scene[si]);
     double tmpDot = dot(omegaI, n);
-    double n1, n2;
+    double n1, n2, nSphere{10};
     if(tmpDot>0.){
         n1 = 1;
-        n2 = 1;
+        n2 = nSphere;
         n = -1*n;
     }
     else{
         n1 = 1;
-        n2 = 1;
+        n2 = nSphere;
     }
 
     if (n2<n1){
-        return Vector(255,255,255);
         return mirorSurface(p, si, light, I, depth+1, previous);
     }
     double n12 = n1/n2;
@@ -211,19 +227,21 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     Ray ray(p, omegaT);
     sphereIpointP best = intersectScene(ray);
 
-    Vector inter = intersect(scene[si], ray);
+    Vector inter = intersectSelf(scene[si], ray);
     if (inter[0]!=0. || inter[1]!=0. || inter[2]!=0.){
+        return getColor(inter, si, light, I, depth, p);
+        /*
         Vector tmp = p-best.inter;
         double d1 = norm(tmp);
         tmp = p-inter;
         double d2 = norm(tmp);
-        if(d2 < d1 && d2 > 1){
+        if(d2 < d1){
             return getColor(inter, si, light, I, depth, p);
-        }
+        }*/
     }
     
     if (best.i == -1)
-        return Vector(200,100,100);
+        return Vector(0,0,0);
     
     return getColor(best.inter, best.i, light, I, depth, p);
 }
