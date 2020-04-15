@@ -54,7 +54,7 @@ void buildScene(){
     scene.push_back(Sphere(tmpPoint, 10, tmpColor, miror));
 
     tmpPoint = Vector(20,0,0);
-    tmpColor = Vector(255,1,128);
+    tmpColor = Vector(240,10,20);
     scene.push_back(Sphere(tmpPoint, 10, tmpColor, transparent));
 }
 
@@ -141,7 +141,7 @@ double visibility(Vector p, Vector light, int si){
                     passThrough = 0;
                     break;
                 case transparent:
-                    passThrough = scene[i].c[2]/256;
+                    passThrough = scene[i].c[0]/256;
                 default:
                     break;
                 }
@@ -200,19 +200,28 @@ Vector intersectSelf(Sphere s, Ray r){
 Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous){
     if (depth<=0) return Vector(0,0,0);
     depth -= 1;
-    
+
+    double n1 = scene[si].c[1]/10;
+    double n2 = scene[si].c[2]/10.;
+
     Vector omegaI = p-previous;
     omegaI = omegaI/norm(omegaI);
     Vector n = normalSatP(p, scene[si]);
     double tmpDot = dot(omegaI, n);
-    double n1 = 1;
-    double n2 = scene[si].c[1] + scene[si].c[0]/256.;
 
-    if (n2<n1) return mirorSurface(p, si, light, I, depth, previous);
+    if (n2<n1) return mirorSurface(p, si, light, I, depth+1, previous);
 
     if(tmpDot>0.) n = -1*n;
     tmpDot = dot(omegaI, n);
     double n12 = n1/n2;
+
+    double R = 1. - 4*n1*n2/(n1*n1+2*n1*n2+n2*n2);
+    R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
+    
+    if (double(rand()) / double(RAND_MAX) < R){
+        return mirorSurface(p, si, light, I, depth+1, previous);
+    }
+    
 
     Vector omegaT = n12*(omegaI-tmpDot*n);
     omegaT = omegaT - n*sqrt(1-n12*n12*(1-tmpDot*tmpDot));

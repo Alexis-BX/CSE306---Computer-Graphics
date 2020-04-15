@@ -35,7 +35,18 @@ int main(int argc, char *argv[]){
                 image[(j*w+i)*3+1] = 0;
                 image[(j*w+i)*3+2] = 0;
             } else {
-                Vector color = getColor(best.inter, best.i, lightSource, lightI, 10);
+                Vector color(0,0,0);
+                if (scene[best.i].m == transparent){
+                    int amount = 100;
+                    for (int k=0; k<amount; k++){
+                        color += getColor(best.inter, best.i, lightSource, lightI, 10);
+                    }
+                    color = color/amount;
+                }
+                else{
+                    color = getColor(best.inter, best.i, lightSource, lightI, 10);
+                }
+                
                 image[(j*w+i)*3+0] = int(min(pow(color[0],1/gamma) * rgbCorrection, 255.));
                 image[(j*w+i)*3+1] = int(min(pow(color[1],1/gamma) * rgbCorrection, 255.));
                 image[(j*w+i)*3+2] = int(min(pow(color[2],1/gamma) * rgbCorrection, 255.));                
