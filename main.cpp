@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
                 switch (scene[best.i].m){
                 case opaque:{
                     color = getColor(best.inter, best.i, lightSource, lightI, 5);
-                    //color = color + scene[best.i].c * indirectLight(best.inter, best.i, lightSource, lightI, 4);
+                    color = color + scene[best.i].c * indirectLight(best.inter, best.i, lightSource, lightI, 4);
                     break;
                     }
                 case miror:{
