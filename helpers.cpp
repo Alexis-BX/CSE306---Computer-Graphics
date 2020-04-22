@@ -4,6 +4,7 @@ double PI{3.1415};
 const int w {300};
 const int h {400};
 const double gamma {2.2}; // usual: 2.2
+const double rgbCorrection = pow(255, (gamma-1)/gamma);
 
 Camera cam;
 vector<Sphere> scene;
@@ -25,37 +26,28 @@ void writePPM(int w, int h, int* image){
     output.close();
 }
 
+void addSphere(double x, double y, double z, double r, double g, double b, double R, Materials m=opaque){
+    Vector tmpPoint(x,y,z);
+    Vector tmpColor(r,g,b);
+    scene.push_back(Sphere(tmpPoint, R, tmpColor, m));
+}
+
+void addHollowSphere(double x, double y, double z, double t, double n1, double n2, double R){
+    addSphere(x, y, z, t, n1, n2, R-0.1, transparent);
+    addSphere(x, y, z, t, n1, n2, R, transparent);
+}
+
 void buildScene(){
-    Vector tmpPoint;
-    Vector tmpColor;
+    addSphere(0, 0, 1000, 255, 0, 255, 940);
+    addSphere(0, -1000, 0, 0, 0, 255, 990);
+    addSphere(0, 1000, 0, 255, 0, 0, 940);
+    addSphere(0, 0, -1000, 0, 255, 0, 940);
+    addSphere(0, 0, 0, 100, 100, 100, 10);
+    addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
 
-    tmpPoint = Vector(0,0,1000);
-    tmpColor = Vector(255,0,255);
-    scene.push_back(Sphere(tmpPoint, 940, tmpColor));
-
-    tmpPoint = Vector(0,-1000,0);
-    tmpColor = Vector(0,0,255);
-    scene.push_back(Sphere(tmpPoint, 990, tmpColor));
-
-    tmpPoint = Vector(0,1000,0);
-    tmpColor = Vector(255,0,0);
-    scene.push_back(Sphere(tmpPoint, 940, tmpColor));
-
-    tmpPoint = Vector(0,0,-1000);
-    tmpColor = Vector(0,255,0);
-    scene.push_back(Sphere(tmpPoint, 940, tmpColor));
-
-    tmpPoint = Vector(0,0,0);
-    tmpColor = Vector(100,100,100);
-    scene.push_back(Sphere(tmpPoint, 10, tmpColor));
-
-    tmpPoint = Vector(-20,0,0);
-    tmpColor = Vector(100,100,100);
-    scene.push_back(Sphere(tmpPoint, 10, tmpColor, miror));
-
-    tmpPoint = Vector(20,0,0);
-    tmpColor = Vector(240,10,20);
-    scene.push_back(Sphere(tmpPoint, 10, tmpColor, transparent));
+    //Hollow sphere
+    //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
+    addSphere(20, 0, 0, 1, 1, 2, 10, transparent);
 }
 
 Vector getPixCoord(int i, int j){
@@ -137,12 +129,11 @@ double visibility(Vector p, Vector light, int si){
             inter = p-inter;
             if(norm(inter) < d){
                 switch (scene[i].m) {
-                case opaque:
-                    passThrough = 0;
-                    break;
                 case transparent:
-                    passThrough = scene[i].c[0]/256;
+                    passThrough = scene[i].c[0];
+                case opaque:    
                 default:
+                    passThrough = 0.;
                     break;
                 }
             }
@@ -181,6 +172,13 @@ Vector mirorSurface(Vector p, int si, Vector light, int I, int depth, Vector pre
         return getColor(best.inter, best.i, light, I, depth, p);
 }
 
+Vector gammaCor(Vector color){
+    double x = pow(color[0],1/gamma) * rgbCorrection;
+    double y = pow(color[1],1/gamma) * rgbCorrection;
+    double z = pow(color[2],1/gamma) * rgbCorrection;
+    return Vector(x, y, z);
+}
+
 Vector intersectSelf(Sphere s, Ray r){
     Vector tmp = r.p-s.p;
     double t = dot(r.d, tmp);
@@ -201,8 +199,8 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     if (depth<=0) return Vector(0,0,0);
     depth -= 1;
 
-    double n1 = scene[si].c[1]/10;
-    double n2 = scene[si].c[2]/10.;
+    double n1 = scene[si].c[1];
+    double n2 = scene[si].c[2];
 
     Vector omegaI = p-previous;
     omegaI = omegaI/norm(omegaI);
@@ -245,6 +243,51 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
         return Vector(0,0,0);
     
     return getColor(best.inter, best.i, light, I, depth, p);
+}
+
+Vector randomVec(Vector& n){
+    const double r1 = double(rand()) / double(RAND_MAX);
+    const double r2 = double(rand()) / double(RAND_MAX);
+    const double x = cos(2.*PI*r1)*sqrt(1-r2);
+    const double y = sin(2.*PI*r1)*sqrt(1-r2);
+    const double z = sqrt(r2);
+    Vector T1;
+    if(abs(n[0])<abs(n[1])){
+        if(abs(n[0])<abs(n[2])){
+            T1 = Vector(0, -n[2], n[1]);
+        } else{
+            T1 = Vector(-n[1], n[0], 0);
+        }
+    } else{
+        if(abs(n[1])<abs(n[2])){
+            T1 = Vector(-n[2], 0, n[1]);
+        } else{
+            T1 = Vector(-n[1], n[0], 0);
+        }
+    }
+    T1 = T1 / norm(T1);
+    Vector T2 = cross(n,T1);
+    T2 = T2/norm(T2);
+    Vector tmp = x*T1 + y*T2 + z*n;
+    tmp = tmp/norm(tmp);
+    return tmp;
+}
+
+Vector indirectLight(Vector p, int si, Vector light, int I, int depth){
+    if (depth<=0) return Vector(0,0,0);
+    depth -= 1;
+    Vector diffusion(0,0,0);
+    int amount = 5;
+    Vector n = normalSatP(p, scene[si]);
+
+    for (int k=0; k<amount; k++){
+        Vector ranedVec = randomVec(n);
+        Ray ray(p, ranedVec);
+        sphereIpointP tmpbest = intersectScene(ray);
+        if (tmpbest.i != -1)                                
+            diffusion += getColor(tmpbest.inter, tmpbest.i, light, I, depth);
+    }
+    return diffusion/amount;
 }
 
 Vector getColor(Vector p, int si, Vector light, int I, int depth, Vector previous){

@@ -15,13 +15,12 @@ int main(int argc, char *argv[]){
     int lightI = 80000; //max 1000000000
     //when working with more lights, make dedicated class (point+I) and list of sources
 
-    double rgbCorrection = pow(255, (gamma-1)/gamma);
-
     for (int i=0; i<w*h*3; i++){
         image[i]=0;
     }
-
+    #pragma omp parallel for
     for(int i=0; i<w; i++){
+        #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector pixel = getPixCoord(i,j);
             Vector direction = pixel-cam.p;
@@ -36,20 +35,35 @@ int main(int argc, char *argv[]){
                 image[(j*w+i)*3+2] = 0;
             } else {
                 Vector color(0,0,0);
-                if (scene[best.i].m == transparent){
-                    int amount = 100;
+                switch (scene[best.i].m){
+                case opaque:{
+                    color = getColor(best.inter, best.i, lightSource, lightI, 5);
+                    color = color + scene[best.i].c * indirectLight(best.inter, best.i, lightSource, lightI, 5);
+                    break;
+                    }
+                case miror:{
+                    color = getColor(best.inter, best.i, lightSource, lightI, 5);
+                    break;
+                    }
+                case transparent:{
+                    int amount = 10;
                     for (int k=0; k<amount; k++){
                         color += getColor(best.inter, best.i, lightSource, lightI, 10);
                     }
                     color = color/amount;
-                }
-                else{
-                    color = getColor(best.inter, best.i, lightSource, lightI, 10);
+                    break;
+                    }
+                default:
+                    break;
                 }
                 
-                image[(j*w+i)*3+0] = int(min(pow(color[0],1/gamma) * rgbCorrection, 255.));
-                image[(j*w+i)*3+1] = int(min(pow(color[1],1/gamma) * rgbCorrection, 255.));
-                image[(j*w+i)*3+2] = int(min(pow(color[2],1/gamma) * rgbCorrection, 255.));                
+                color = gammaCor(color);
+                color = max(color, Vector(0.,0.,0.));
+                color = min(color, Vector(255.,255.,255.));
+
+                image[(j*w+i)*3+0] = int(color[0]);
+                image[(j*w+i)*3+1] = int(color[1]);
+                image[(j*w+i)*3+2] = int(color[2]);                
             }
 
             
