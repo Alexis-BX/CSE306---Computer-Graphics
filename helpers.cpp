@@ -1,6 +1,6 @@
 #include "objects.cpp"
 
-double PI{3.1415};
+double PI{3.14159265};
 const int w {300};
 const int h {400};
 const double gamma {2.2}; // usual: 2.2
@@ -245,7 +245,7 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     return getColor(best.inter, best.i, light, I, depth, p);
 }
 
-Vector randomVec(Vector& n){
+Vector randomVec(const Vector& n){
     const double r1 = double(rand()) / double(RAND_MAX);
     const double r2 = double(rand()) / double(RAND_MAX);
     const double x = cos(2.*PI*r1)*sqrt(1-r2);
@@ -260,24 +260,24 @@ Vector randomVec(Vector& n){
         }
     } else{
         if(abs(n[1])<abs(n[2])){
-            T1 = Vector(-n[2], 0, n[1]);
+            T1 = Vector(-n[2], 0, n[0]);
         } else{
             T1 = Vector(-n[1], n[0], 0);
         }
     }
     T1 = T1 / norm(T1);
     Vector T2 = cross(n,T1);
-    T2 = T2/norm(T2);
-    Vector tmp = x*T1 + y*T2 + z*n;
-    tmp = tmp/norm(tmp);
-    return tmp;
+    //T2 = T2/norm(T2);
+    //Vector tmp = x*T1 + y*T2 + z*n;
+    //tmp = tmp/norm(tmp);
+    return x*T1 + y*T2 + z*n;
 }
 
 Vector indirectLight(Vector p, int si, Vector light, int I, int depth){
     if (depth<=0) return Vector(0,0,0);
     depth -= 1;
     Vector diffusion(0,0,0);
-    int amount = 5;
+    int amount = 10;
     Vector n = normalSatP(p, scene[si]);
 
     for (int k=0; k<amount; k++){
