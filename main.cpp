@@ -58,12 +58,10 @@ int main(int argc, char *argv[]){
                 }
                 
                 color = gammaCor(color);
-                color = max(color, Vector(0.,0.,0.));
-                color = min(color, Vector(255.,255.,255.));
 
-                image[(j*w+i)*3+0] = int(color[0]);
-                image[(j*w+i)*3+1] = int(color[1]);
-                image[(j*w+i)*3+2] = int(color[2]);                
+                image[(j*w+i)*3+0] = minMaxInt(color[0]);
+                image[(j*w+i)*3+1] = minMaxInt(color[1]);
+                image[(j*w+i)*3+2] = minMaxInt(color[2]);                
             }
 
             

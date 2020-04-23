@@ -303,7 +303,9 @@ Vector getColor(Vector p, int si, Vector light, int I, int depth, Vector previou
     }
 }
 
-
+int minMaxInt(double x){
+    return min(max(int(x),0), 255);
+}
 
 
 
