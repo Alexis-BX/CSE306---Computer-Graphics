@@ -8,6 +8,7 @@ const double rgbCorrection = pow(255, (gamma-1)/gamma);
 
 Camera cam;
 vector<Sphere> scene;
+Vector getColor(Vector p, int si, Vector light, int I, int depth=10, Vector previous=cam.p);
 
 void writePPM(int w, int h, int* image){
     ofstream output;
@@ -42,12 +43,12 @@ void buildScene(){
     addSphere(0, -1000, 0, 0, 0, 255, 990);
     addSphere(0, 1000, 0, 255, 0, 0, 940);
     addSphere(0, 0, -1000, 0, 255, 0, 940);
-    addSphere(0, 0, 0, 100, 100, 100, 10);
+    addSphere(0, 0, 0, 255, 255, 255, 10);
     addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
 
     //Hollow sphere
     //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
-    addSphere(20, 0, 0, 1, 1, 2, 10, transparent);
+    addSphere(20, 0, 0, 0, 1, 2, 10, transparent);
 }
 
 Vector getPixCoord(int i, int j){
@@ -88,7 +89,6 @@ struct sphereIpointP{
 
 sphereIpointP intersectScene(Ray ray, int skip=-1){
     sphereIpointP res;
-
     double closest = 0;
 
     for(int k=0; k<int(scene.size()); k++){
@@ -96,8 +96,7 @@ sphereIpointP intersectScene(Ray ray, int skip=-1){
         Sphere& tmpSphere = scene[k];
         Vector inter = intersect(tmpSphere, ray);
         if (inter[0]!=0. || inter[1]!=0. || inter[2]!=0.){
-            Vector tmpInter = cam.p-inter;
-            double d = norm(tmpInter);
+            double d = norm(cam.p-inter);
             if(d < closest || res.i==-1){
                 res.i = k;
                 res.inter = inter;
@@ -110,8 +109,7 @@ sphereIpointP intersectScene(Ray ray, int skip=-1){
 }
 
 Vector normalSatP(Vector p, Sphere s){
-    Vector v = p-s.p;
-    return v/norm(v);
+    return normalize(p-s.p);
 }
 
 double visibility(Vector p, Vector light, int si){
@@ -120,48 +118,35 @@ double visibility(Vector p, Vector light, int si){
     tmp = tmp/d;
     Ray beam(p, tmp); 
     double passThrough = 1;
-    for(int i=0; i<int(scene.size()); i++){
-        if (i==si) {
-            continue;
-        }
-        Vector inter = intersect(scene[i], beam);
-        if (inter[0]!=0. || inter[1]!=0. || inter[2]!=0.){
-            inter = p-inter;
-            if(norm(inter) < d){
-                switch (scene[i].m) {
-                case transparent:
-                    passThrough = scene[i].c[0];
-                case opaque:    
-                default:
-                    passThrough = 0.;
-                    break;
-                }
-            }
-        }
+    sphereIpointP best = intersectScene(beam, si);
+
+    if (best.i == -1) return 1;
+    if (norm(best.inter-p)>d) return 1;
+    switch (scene[best.i].m) {
+    case transparent:
+        return scene[best.i].c[0];
+    case opaque:    
+    default:
+        return 0.;
+        break;
     }
-    return passThrough;
 }
 
 Vector lambertian(Vector p, int si, Vector light, int I){
-    //point, sphere index, light, intensity, visibility of light
-    // p is not ofset as we ignore the sphere p belongs to when looking for shadows
     Vector n = normalSatP(p, scene[si]);
     Vector tmp = light-p;
     double d = norm(tmp);
     return (I/(4.*PI*PI*d*d) * visibility(p, light, si) * max(dot(n, tmp/d), 0.)) * scene[si].c;
 }
 
-Vector getColor(Vector p, int si, Vector light, int I, int depth=10, Vector previous=cam.p);
-
 Vector mirorSurface(Vector p, int si, Vector light, int I, int depth, Vector previous){
     if (depth<=0) return Vector(0,0,0);
     depth -= 1;
 
-    Vector omegaI = p-previous;
-    omegaI = omegaI/norm(omegaI);
+    Vector omegaI = normalize(p-previous);
     Vector n = normalSatP(p, scene[si]);
     Vector omegaR = omegaI - 2 * dot(omegaI, n) * n;
-    omegaR = omegaR/norm(omegaR);
+    omegaR = normalize(omegaR);
 
     Ray ray(p, omegaR);
     sphereIpointP best = intersectScene(ray);
@@ -202,8 +187,7 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     double n1 = scene[si].c[1];
     double n2 = scene[si].c[2];
 
-    Vector omegaI = p-previous;
-    omegaI = omegaI/norm(omegaI);
+    Vector omegaI = normalize(p-previous);
     Vector n = normalSatP(p, scene[si]);
     double tmpDot = dot(omegaI, n);
 
@@ -223,7 +207,7 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
 
     Vector omegaT = n12*(omegaI-tmpDot*n);
     omegaT = omegaT - n*sqrt(1-n12*n12*(1-tmpDot*tmpDot));
-    omegaT = omegaT/norm(omegaT);
+    omegaT = normalize(omegaT);
 
     Ray ray(p, omegaT);
     sphereIpointP best = intersectScene(ray, si);
@@ -265,11 +249,8 @@ Vector randomVec(const Vector& n){
             T1 = Vector(-n[1], n[0], 0);
         }
     }
-    T1 = T1 / norm(T1);
+    T1 = normalize(T1);
     Vector T2 = cross(n,T1);
-    //T2 = T2/norm(T2);
-    //Vector tmp = x*T1 + y*T2 + z*n;
-    //tmp = tmp/norm(tmp);
     return x*T1 + y*T2 + z*n;
 }
 
@@ -277,23 +258,20 @@ Vector indirectLight(Vector p, int si, Vector light, int I, int depth){
     if (depth<=0) return Vector(0,0,0);
     depth -= 1;
     Vector diffusion(0,0,0);
-    int amount = 10;
     Vector n = normalSatP(p, scene[si]);
 
-    for (int k=0; k<amount; k++){
-        Vector ranedVec = randomVec(n);
-        Ray ray(p, ranedVec);
-        sphereIpointP tmpbest = intersectScene(ray);
-        if (tmpbest.i != -1)                                
-            diffusion += getColor(tmpbest.inter, tmpbest.i, light, I, depth);
-    }
-    return diffusion/amount;
+    Vector ranedVec = randomVec(n);
+    Ray ray(p, ranedVec);
+    sphereIpointP tmpbest = intersectScene(ray);
+    if (tmpbest.i != -1)                                
+        diffusion += getColor(tmpbest.inter, tmpbest.i, light, I, depth);
+    return diffusion;
 }
 
 Vector getColor(Vector p, int si, Vector light, int I, int depth, Vector previous){
     switch (scene[si].m){
     case opaque:
-        return lambertian(p, si, light, I);
+        return lambertian(p, si, light, I) + scene[si].c * indirectLight(p, si, light, I, depth-1);
     case miror:
         return mirorSurface(p, si, light, I, depth, previous);
     case transparent:
@@ -302,22 +280,3 @@ Vector getColor(Vector p, int si, Vector light, int I, int depth, Vector previou
         return Vector(0,0,0);
     }
 }
-
-int minMaxInt(double x){
-    return min(max(int(x),0), 255);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

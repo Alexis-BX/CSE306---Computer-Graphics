@@ -46,25 +46,20 @@ Vector operator/(const Vector &b, double t){
     return Vector(b[0]/t, b[1]/t, b[2]/t);
 }
 
-double dot(const Vector& a, const Vector &b){
+double dot(const Vector& a, const Vector& b){
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-Vector cross(const Vector &a, const Vector &b){
+Vector cross(const Vector& a, const Vector& b){
     return Vector(a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]);
 }
 
-double norm(Vector& v){
+double norm(const Vector& v){
     return sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
 }
 
-Vector normalize(Vector& v){
-    double tmp = norm(v);
-    double x,y,z;
-    x = v[0] / tmp;
-    y = v[1] / tmp;
-    z = v[2] / tmp;
-    return Vector(x,y,z);
+Vector normalize(const Vector& v){
+    return v/norm(v);
 }
 
 Vector min(const Vector &a, const Vector &b){

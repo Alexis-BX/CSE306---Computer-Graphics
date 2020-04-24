@@ -23,48 +23,26 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector pixel = getPixCoord(i,j);
-            Vector direction = pixel-cam.p;
-            direction = direction/norm(direction);
+            Vector direction = normalize(pixel-cam.p);
             Ray ray(cam.p, direction);
 
             sphereIpointP best = intersectScene(ray);
 
-            if (best.i == -1){
-                image[(j*w+i)*3+0] = 0;
-                image[(j*w+i)*3+1] = 0;
-                image[(j*w+i)*3+2] = 0;
-            } else {
-                Vector color(0,0,0);
-                switch (scene[best.i].m){
-                case opaque:{
-                    color = getColor(best.inter, best.i, lightSource, lightI, 5);
-                    color = color + scene[best.i].c * indirectLight(best.inter, best.i, lightSource, lightI, 4);
-                    break;
-                    }
-                case miror:{
-                    color = getColor(best.inter, best.i, lightSource, lightI, 5);
-                    break;
-                    }
-                case transparent:{
-                    int amount = 10;
-                    for (int k=0; k<amount; k++){
-                        color += getColor(best.inter, best.i, lightSource, lightI, 10);
-                    }
-                    color = color/amount;
-                    break;
-                    }
-                default:
-                    break;
+            Vector color(0,0,0);
+            if (best.i != -1){    
+                int amount = 20;
+                #pragma omp parallel for
+                for (int k=0; k<amount; k++){
+                    color += getColor(best.inter, best.i, lightSource, lightI, 3);
                 }
+                color = color/amount;
                 
                 color = gammaCor(color);
-
-                image[(j*w+i)*3+0] = minMaxInt(color[0]);
-                image[(j*w+i)*3+1] = minMaxInt(color[1]);
-                image[(j*w+i)*3+2] = minMaxInt(color[2]);                
             }
-
             
+            image[(j*w+i)*3+0] = min(max(int(color[0]),0), 255);
+            image[(j*w+i)*3+1] = min(max(int(color[1]),0), 255);
+            image[(j*w+i)*3+2] = min(max(int(color[2]),0), 255);                
         }
     }
 
