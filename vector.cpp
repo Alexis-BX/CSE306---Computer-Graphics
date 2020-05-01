@@ -59,6 +59,8 @@ double norm(const Vector& v){
 }
 
 Vector normalize(const Vector& v){
+    if (norm(v)==0)
+        std::cout<<"Normalise null vector (division by 0)"<<std::endl;
     return v/norm(v);
 }
 
@@ -74,4 +76,16 @@ Vector max(const Vector &a, const Vector &b){
     double y = max(a[1], b[1]);
     double z = max(a[2], b[2]);
     return Vector(x,y,z);
+}
+
+void print(const Vector &i){
+    std::cout<<'('<<i[0]<<','<<i[1]<<','<<i[2]<<')'<<std::endl;
+}
+
+bool operator==(const Vector &a, const Vector &b){
+    return a[0]==b[0]&&a[1]==b[1]&&a[2]==b[2];
+}
+
+bool operator!=(const Vector &a, const Vector &b){
+    return a[0]!=b[0]||a[1]!=b[1]||a[2]!=b[2];
 }

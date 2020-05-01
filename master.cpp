@@ -4,3 +4,10 @@
 #include <cmath>
 
 using namespace std;
+
+template <typename T>
+void print(T i){
+    std::cout<<i<<std::endl;
+}
+
+
