@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector color(0,0,0);
-            int amount = 1000;
+            int amount = 10;
             
             #pragma omp parallel for
             for (int k=0; k<amount; k++){
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
                 
                 Vector direction = normalize(pixel-localCam.p);
                 Ray ray(localCam.p, direction);
-                sphereIpointP best = intersectScene(ray);
+                sphereIpointP best = intersectAll(ray);
 
                 if (best.i != -1){
                     color += getColor(best.inter, best.i, light, 10, localCam.p);

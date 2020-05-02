@@ -1,3 +1,6 @@
+#ifndef VECTOR
+#define VECTOR
+
 #include "master.cpp"
 
 class Vector {
@@ -14,8 +17,9 @@ public:
         coord[2] += b[2];
         return *this;
     }
+    double coord[3];    
     const double& operator[](int i) const {return coord[i];}
-    double coord[3];
+
 };
 
 Vector operator+(const Vector& a, const Vector &b){
@@ -89,3 +93,5 @@ bool operator==(const Vector &a, const Vector &b){
 bool operator!=(const Vector &a, const Vector &b){
     return a[0]!=b[0]||a[1]!=b[1]||a[2]!=b[2];
 }
+
+#endif

@@ -1,23 +1,12 @@
+#ifndef OBJ
+#define OBJ
+
 #include "vector.cpp"
 
 enum Materials{
     opaque,
     miror,
     transparent
-};
-
-struct TriangleIndices {
-    int vtxindices[3] ;
-    int normalindices[3] ;
-    int uvindices[3] ;
-};
-
-class Mesh {
-public:
-    vector<Vector> vertices;
-    vector<Vector> normals;
-    vector<Vector> uvs;
-    vector<TriangleIndices> triangles;
 };
 
 class Sphere{
@@ -67,3 +56,5 @@ public:
     double R;
     int I;
 };
+
+#endif

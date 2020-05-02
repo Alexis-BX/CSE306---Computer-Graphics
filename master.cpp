@@ -1,7 +1,13 @@
+#ifndef MASTER
+#define MASTER
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <cstring>
+#include <stdio.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -14,4 +20,4 @@ void print(T i){
     std::cout<<i<<std::endl;
 }
 
-
+#endif

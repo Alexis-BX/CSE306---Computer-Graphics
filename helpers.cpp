@@ -1,4 +1,7 @@
-#include "objects.cpp"
+#ifndef HELP
+#define HELP
+
+#include "simple_obj_file_reader.cpp"
 
 const double gamma {2.2}; // usual: 2.2
 const double rgbCorrection = pow(255, (gamma-1)/gamma);
@@ -6,6 +9,7 @@ const Vector NULLVEC(0,0,0);
 
 Camera cam;
 vector<Sphere> scene;
+TriangleMesh mesh;
 Vector getColor(Vector p, int si, Light light, int depth=10, Vector previous=cam.p);
 
 double random(){
@@ -45,13 +49,13 @@ void buildScene(){
     addSphere(0, -1000, 0, 0, 0, 255, 990);
     addSphere(0, 1000, 0, 255, 0, 0, 940);
     addSphere(0, 0, -1000, 0, 255, 0, 940);
-    addSphere(0, 0, 25, 255, 255, 255, 10);
+    //addSphere(0, 0, 25, 255, 255, 255, 10);
     //addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
-    addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
+    //addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
     //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
-    addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
+    //addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
 
-    //can add Hollow sphere
+    //mesh.readOBJ("model_cat/cat.obj");
 }
 
 Vector getPixCoord(double i, double j){
@@ -84,19 +88,43 @@ Vector intersect(Sphere s, Ray r){
     return r.p + t*r.d;
 }
 
+Vector intersect(TriangleIndices tri, Ray ray){
+    
+    Vector A = mesh.vertices[tri.vtxi];
+    Vector B = mesh.vertices[tri.vtxj];
+    Vector C = mesh.vertices[tri.vtxk];
+    Vector N = normalize(cross(A-B, A-C));
+
+    if(dot(N, ray.d)==0) return NULLVEC;
+    double t = dot(N,A-ray.p) / dot(N, ray.d);
+    if (t < 0) return NULLVEC;
+    Vector ret = ray.p + t * ray.d;
+
+    Vector tmp = cross(B - A, ret - A);
+    if (dot(N,tmp) < 0) return NULLVEC;
+
+    tmp = cross(C - B, ret - B);
+    if (dot(N,tmp) < 0)  return NULLVEC;
+
+    tmp = cross(A - C, ret - C);
+    if (dot(N,tmp) < 0) return NULLVEC;
+    return ret;
+}
+
 struct sphereIpointP{
     int i = -1;
-    Vector inter;
+    Vector inter;// = NULLVEC;
 };
 
-sphereIpointP intersectScene(Ray ray, int skip=-1){
+template <typename T>
+sphereIpointP intersectList(Ray ray, vector<T> list, int skip=-1){
     sphereIpointP res;
     double closest = 0;
 
-    for(int k=0; k<int(scene.size()); k++){
+    for(int k=0; k<int(list.size()); k++){
         if (k==skip) continue;
-        Sphere& tmpSphere = scene[k];
-        Vector inter = intersect(tmpSphere, ray);
+        T& tmp = list[k];
+        Vector inter = intersect(tmp, ray);
         if (inter!=NULLVEC){
             double d = norm(cam.p-inter);
             if(d < closest || res.i==-1){
@@ -108,6 +136,15 @@ sphereIpointP intersectScene(Ray ray, int skip=-1){
         }
     }
     return res;
+}
+
+sphereIpointP intersectAll(Ray ray,int skip=-1){
+    sphereIpointP interS = intersectList<Sphere>(ray, scene, skip);
+    sphereIpointP interM = intersectList<TriangleIndices>(ray, mesh.indices, skip);
+
+    if (interS.i==-1) return interM;
+    if (interM.i==-1) return interS;
+    return norm(interS.inter-ray.p)<norm(interM.inter-ray.p)?interS:interM;
 }
 
 double visibility(Vector p, Vector light, int si){
@@ -151,7 +188,7 @@ Vector mirorSurface(Vector p, int si, Light light, int depth, Vector previous){
     omegaR = normalize(omegaR);
 
     Ray ray(p, omegaR);
-    sphereIpointP best = intersectScene(ray);
+    sphereIpointP best = intersectAll(ray);
 
     if (best.i == -1) return NULLVEC;
     return getColor(best.inter, best.i, light, depth, p);
@@ -214,7 +251,7 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
     omegaT = normalize(omegaT);
     
     Ray ray(p, omegaT);
-    sphereIpointP best = intersectScene(ray, si);
+    sphereIpointP best = intersectAll(ray, si);
     Vector inter = intersectSelf(scene[si], ray);
 
     if (inter!=NULLVEC){
@@ -265,7 +302,7 @@ Vector indirectLight(Vector p, int si, Light light, int depth){
 
     Vector ranedVec = randomVec(n);
     Ray ray(p, ranedVec);
-    sphereIpointP tmpbest = intersectScene(ray);
+    sphereIpointP tmpbest = intersectAll(ray);
     if (tmpbest.i != -1)                                
         diffusion += getColor(tmpbest.inter, tmpbest.i, light, depth, p);
     return diffusion;
@@ -298,10 +335,8 @@ Vector getColor(Vector p, int si, Light light, int depth, Vector previous){
     if (p==previous || depth<=0 || p!=p) return NULLVEC;
     depth -= 1;
     switch (scene[si].m){
-    case opaque: {// lambertian or sphericalLight
-        Vector tmpA = sphericalLight(p, si, light);
-        Vector tmpB = scene[si].c * indirectLight(p, si, light, depth-1) / 255;
-        return (tmpA + tmpB) / 2;}
+    case opaque: // lambertian or sphericalLight
+        return (sphericalLight(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
     case miror:
         return mirorSurface(p, si, light, depth, previous);
     case transparent:{
@@ -310,3 +345,5 @@ Vector getColor(Vector p, int si, Light light, int depth, Vector previous){
         return NULLVEC;
     }
 }
+
+#endif
