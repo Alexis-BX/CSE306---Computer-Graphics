@@ -1,8 +1,5 @@
 #include "objects.cpp"
 
-double PI{3.14159265};
-const int w {300};
-const int h {400};
 const double gamma {2.2}; // usual: 2.2
 const double rgbCorrection = pow(255, (gamma-1)/gamma);
 const Vector NULLVEC(0,0,0);
@@ -10,6 +7,10 @@ const Vector NULLVEC(0,0,0);
 Camera cam;
 vector<Sphere> scene;
 Vector getColor(Vector p, int si, Light light, int depth=10, Vector previous=cam.p);
+
+double random(){
+    return double(rand()) / double(RAND_MAX);
+}
 
 void writePPM(int w, int h, int* image){
     ofstream output;
@@ -35,8 +36,8 @@ void addSphere(double x, double y, double z, double r, double g, double b, doubl
 }
 
 void addHollowSphere(double x, double y, double z, double t, double n1, double n2, double R){
-    addSphere(x, y, z, t, n1, n2, R-0.1, transparent);
     addSphere(x, y, z, t, n1, n2, R, transparent);
+    addSphere(x, y, z, t, n2, n1, R-0.5, transparent);
 }
 
 void buildScene(){
@@ -44,19 +45,19 @@ void buildScene(){
     addSphere(0, -1000, 0, 0, 0, 255, 990);
     addSphere(0, 1000, 0, 255, 0, 0, 940);
     addSphere(0, 0, -1000, 0, 255, 0, 940);
-    addSphere(0, 0, 0, 255, 255, 255, 10);
-    addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
-
+    addSphere(0, 0, 25, 255, 255, 255, 10);
+    //addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
+    addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
     //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
-    addSphere(20, 0, 0, 0, 1, 1.5, 10, transparent);
+    addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
 
     //can add Hollow sphere
 }
 
-Vector getPixCoord(int i, int j){
-    int x = i;
-    int y = h-j-1;
-    return Vector(cam.p[0]+x+0.5-w/2., cam.p[1]+y+0.5-h/2., cam.p[2]-w/(2.*tan(cam.fov/2.*PI/180.)));
+Vector getPixCoord(double i, double j){
+    double x = i;
+    double y = h-j-1;
+    return Vector(cam.p[0]+x+0.5-w/2., cam.p[1]+y+0.5-h/2., cam.p[2]-cam.f);
 }
 
 Vector intersect(Sphere s, Ray r){
@@ -190,7 +191,7 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
     double R = 1. - 4.*n1*n2/(n1*n1+2.*n1*n2+n2*n2);
     R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
 
-    if (double(rand()) / double(RAND_MAX) < R){
+    if (random() < R){
         return mirorSurface(p, si, light, depth+1, previous);
     }
     
@@ -232,8 +233,8 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
 }
 
 Vector randomVec(const Vector& n){
-    const double r1 = double(rand()) / double(RAND_MAX);
-    const double r2 = double(rand()) / double(RAND_MAX);
+    const double r1 = random();
+    const double r2 = random();
     const double x = cos(2.*PI*r1)*sqrt(1.-r2);
     const double y = sin(2.*PI*r1)*sqrt(1.-r2);
     const double z = sqrt(r2);
@@ -257,6 +258,8 @@ Vector randomVec(const Vector& n){
 }
 
 Vector indirectLight(Vector p, int si, Light light, int depth){
+    if (depth<=0) return NULLVEC;
+    depth -= 1;
     Vector diffusion(0,0,0);
     Vector n = normalize(p - scene[si].p);
 
@@ -266,6 +269,13 @@ Vector indirectLight(Vector p, int si, Light light, int depth){
     if (tmpbest.i != -1)                                
         diffusion += getColor(tmpbest.inter, tmpbest.i, light, depth, p);
     return diffusion;
+}
+
+void boxMuller(double& x, double& y, double stdev=0.3){
+    const double r1 = random();
+    const double r2 = random();
+    x = x+sqrt(-2*log(r1))*cos(2*PI*r2)*stdev;
+    y = y+sqrt(-2*log(r1))*sin(2*PI*r2)*stdev;
 }
 
 Vector sphericalLight(Vector p, int si, Light light){
@@ -278,16 +288,20 @@ Vector sphericalLight(Vector p, int si, Light light){
     double vis = visibility(p, xPrime, si);
     double R = light.R;
     double pdf = dot(nPrime, tmp/d)/PI/R/R;
+
+    if (pdf==0) return NULLVEC; 
     tmp = light.I/(4.*PI*PI*R*R) * scene[si].c/PI * vis * max(dot(n, omegaI), 0.) * max(dot(nPrime, -1*omegaI), 0.) / (pow(norm(xPrime-p), 2)*pdf);
     return tmp;
 }
 
 Vector getColor(Vector p, int si, Light light, int depth, Vector previous){
-    if (p==previous || depth<=0) return NULLVEC;
+    if (p==previous || depth<=0 || p!=p) return NULLVEC;
     depth -= 1;
     switch (scene[si].m){
-    case opaque: // lambertian or sphericalLight
-        return (sphericalLight(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
+    case opaque: {// lambertian or sphericalLight
+        Vector tmpA = sphericalLight(p, si, light);
+        Vector tmpB = scene[si].c * indirectLight(p, si, light, depth-1) / 255;
+        return (tmpA + tmpB) / 2;}
     case miror:
         return mirorSurface(p, si, light, depth, previous);
     case transparent:{

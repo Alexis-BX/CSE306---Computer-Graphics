@@ -60,7 +60,7 @@ double norm(const Vector& v){
 
 Vector normalize(const Vector& v){
     if (norm(v)==0)
-        std::cout<<"Normalise null vector (division by 0)"<<std::endl;
+        print("Normalise null vector (division by 0)");
     return v/norm(v);
 }
 

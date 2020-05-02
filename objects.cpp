@@ -45,12 +45,14 @@ public:
 class Camera {
 public:
     Camera(){}
-    Camera(Vector& point, double fieldOfView){
+    Camera(Vector& point, double fieldOfView, double aperatureRad=.1){
         p = point;
         fov = fieldOfView;
+        f = w/(2.*tan(fov/2.*PI/180.));
+        R = aperatureRad;
     }
     Vector p;
-    double fov;
+    double fov, f, R;
 };
 
 class Light {
