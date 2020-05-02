@@ -52,3 +52,16 @@ public:
     Vector p;
     double fov;
 };
+
+class Light {
+public:
+    Light(){}
+    Light(Vector& point, int intensity, double radius){
+        p = point;
+        I = intensity;
+        R = radius;
+    }
+    Vector p;
+    double R;
+    int I;
+};

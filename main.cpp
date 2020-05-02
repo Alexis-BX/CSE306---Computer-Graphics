@@ -11,8 +11,10 @@ int main(int argc, char *argv[]){
     buildScene();
 
     // lights
+    
     Vector lightSource(-10, 20, 40);
     int lightI = 100000; //max 1000000000
+    Light light(lightSource, lightI, 5);
     //when working with more lights, make dedicated class (point+I) and list of sources
 
     for (int i=0; i<w*h*3; i++){
@@ -23,18 +25,18 @@ int main(int argc, char *argv[]){
     for(int i=0; i<w; i++){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
+            Vector color(0,0,0);
             Vector pixel = getPixCoord(i,j);
             Vector direction = normalize(pixel-cam.p);
-            Ray ray(cam.p, direction);
 
+            Ray ray(cam.p, direction);
             sphereIpointP best = intersectScene(ray);
 
-            Vector color(0,0,0);
             if (best.i != -1){
-                int amount = 1000;
+                int amount = 100;
                 #pragma omp parallel for
                 for (int k=0; k<amount; k++){
-                    color += getColor(best.inter, best.i, lightSource, lightI, 10);
+                    color += getColor(best.inter, best.i, light, 10);
                 }
                 color = color/amount;
                 color = gammaCor(color);

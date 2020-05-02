@@ -9,7 +9,7 @@ const Vector NULLVEC(0,0,0);
 
 Camera cam;
 vector<Sphere> scene;
-Vector getColor(Vector p, int si, Vector light, int I, int depth=10, Vector previous=cam.p);
+Vector getColor(Vector p, int si, Light light, int depth=10, Vector previous=cam.p);
 
 void writePPM(int w, int h, int* image){
     ofstream output;
@@ -135,15 +135,15 @@ double visibility(Vector p, Vector light, int si){
     return passThrough;
 }
 
-Vector lambertian(Vector p, int si, Vector light, int I){
+Vector lambertian(Vector p, int si, Light light){
     Vector n = normalize(p - scene[si].p);
-    Vector tmp = light-p;
+    Vector tmp = light.p-p;
     double d = norm(tmp);
-    tmp = (I/(4.*PI*PI*d*d) * visibility(p, light, si) * max(dot(n, tmp/d), 0.)) * scene[si].c;
+    tmp = (light.I/(4.*PI*PI*d*d) * visibility(p, light.p, si) * max(dot(n, tmp/d), 0.)) * scene[si].c;
     return min(tmp, Vector(255,255,255));
 }
 
-Vector mirorSurface(Vector p, int si, Vector light, int I, int depth, Vector previous){
+Vector mirorSurface(Vector p, int si, Light light, int depth, Vector previous){
     Vector omegaI = normalize(p-previous);
     Vector n = normalize(p - scene[si].p);
     Vector omegaR = omegaI - 2 * dot(omegaI, n) * n;
@@ -153,7 +153,7 @@ Vector mirorSurface(Vector p, int si, Vector light, int I, int depth, Vector pre
     sphereIpointP best = intersectScene(ray);
 
     if (best.i == -1) return NULLVEC;
-    return getColor(best.inter, best.i, light, I, depth, p);
+    return getColor(best.inter, best.i, light, depth, p);
 }
 
 Vector gammaCor(Vector color){
@@ -179,7 +179,7 @@ Vector intersectSelf(Sphere s, Ray r){
     return r.p + t*r.d;
 }
 
-Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous){
+Vector refract(Vector p, int si, Light light, int depth, Vector previous){
     double n1 = scene[si].c[1];
     double n2 = scene[si].c[2];
 
@@ -191,7 +191,7 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
 
     if (double(rand()) / double(RAND_MAX) < R){
-        return mirorSurface(p, si, light, I, depth+1, previous);
+        return mirorSurface(p, si, light, depth+1, previous);
     }
     
     if (tmpDot>0){
@@ -205,7 +205,7 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
 
     double rad = 1-n12*n12*(1-tmpDot*tmpDot);
     if(rad<0){
-        return mirorSurface(p, si, light, I, depth+1, previous);
+        return mirorSurface(p, si, light, depth+1, previous);
     }
 
     Vector omegaT = n12*(omegaI-tmpDot*n);
@@ -217,18 +217,18 @@ Vector refract(Vector p, int si, Vector light, int I, int depth, Vector previous
     Vector inter = intersectSelf(scene[si], ray);
 
     if (inter!=NULLVEC){
-        if (best.i == -1) return getColor(inter, si, light, I, depth, p);
+        if (best.i == -1) return getColor(inter, si, light, depth, p);
         double d1 = norm(p-best.inter);
         double d2 = norm(p-inter);
         if(d2 < d1){
-            return getColor(inter, si, light, I, depth, p);
+            return getColor(inter, si, light, depth, p);
         }
     }
     
     if (best.i == -1)
         return NULLVEC;
     
-    return getColor(best.inter, best.i, light, I, depth, p);
+    return getColor(best.inter, best.i, light, depth, p);
 }
 
 Vector randomVec(const Vector& n){
@@ -256,7 +256,7 @@ Vector randomVec(const Vector& n){
     return normalize(x*T1 + y*T2 + z*n);
 }
 
-Vector indirectLight(Vector p, int si, Vector light, int I, int depth){
+Vector indirectLight(Vector p, int si, Light light, int depth){
     Vector diffusion(0,0,0);
     Vector n = normalize(p - scene[si].p);
 
@@ -264,20 +264,34 @@ Vector indirectLight(Vector p, int si, Vector light, int I, int depth){
     Ray ray(p, ranedVec);
     sphereIpointP tmpbest = intersectScene(ray);
     if (tmpbest.i != -1)                                
-        diffusion += getColor(tmpbest.inter, tmpbest.i, light, I, depth, p);
+        diffusion += getColor(tmpbest.inter, tmpbest.i, light, depth, p);
     return diffusion;
 }
 
-Vector getColor(Vector p, int si, Vector light, int I, int depth, Vector previous){
+Vector sphericalLight(Vector p, int si, Light light){
+    Vector n = normalize(p - scene[si].p);
+    Vector tmp = p-light.p;
+    double d = norm(tmp);
+    Vector nPrime = randomVec(tmp/d);
+    Vector xPrime = light.p + light.R*nPrime;
+    Vector omegaI = normalize(xPrime - p);
+    double vis = visibility(p, xPrime, si);
+    double R = light.R;
+    double pdf = dot(nPrime, tmp/d)/PI/R/R;
+    tmp = light.I/(4.*PI*PI*R*R) * scene[si].c/PI * vis * max(dot(n, omegaI), 0.) * max(dot(nPrime, -1*omegaI), 0.) / (pow(norm(xPrime-p), 2)*pdf);
+    return tmp;
+}
+
+Vector getColor(Vector p, int si, Light light, int depth, Vector previous){
     if (p==previous || depth<=0) return NULLVEC;
     depth -= 1;
     switch (scene[si].m){
-    case opaque:
-        return (lambertian(p, si, light, I) + scene[si].c * indirectLight(p, si, light, I, depth-1) / 256) / 2;
+    case opaque: // lambertian or sphericalLight
+        return (sphericalLight(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
     case miror:
-        return mirorSurface(p, si, light, I, depth, previous);
+        return mirorSurface(p, si, light, depth, previous);
     case transparent:{
-        return refract(p, si, light, I, depth, previous);}
+        return refract(p, si, light, depth, previous);}
     default:
         return NULLVEC;
     }
