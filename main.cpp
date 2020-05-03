@@ -2,6 +2,8 @@
 
 int main(int argc, char *argv[]){
     int image[w*h*3];
+    int amount = 10;
+    int depth = 5;
         
     // camera
     Vector camPoint = Vector(0, 0, 55);
@@ -25,7 +27,7 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector color(0,0,0);
-            int amount = 1;
+            
             
             #pragma omp parallel for
             for (int k=0; k<amount; k++){
@@ -48,7 +50,7 @@ int main(int argc, char *argv[]){
                 sphereIpointP best = intersectScene(ray);
 
                 if (best.i != -1){
-                    color += getColor(best.inter, best.i, light, 3, localCam.p);
+                    color += getColor(best.inter, best.i, light, depth, localCam.p);
                 }
             }
             
