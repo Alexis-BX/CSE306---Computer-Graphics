@@ -9,7 +9,7 @@ const Vector NULLVEC(0,0,0);
 
 Camera cam;
 vector<Sphere> scene;
-TriangleMesh mesh;
+vector<TriangleMesh> mesh;
 Vector getColor(Vector p, int si, Light light, int depth=10, Vector previous=cam.p);
 
 double random(){
@@ -90,9 +90,9 @@ Vector intersect(Sphere s, Ray r){
 
 Vector intersect(TriangleIndices tri, Ray ray){
     
-    Vector A = mesh.vertices[tri.vtxi];
-    Vector B = mesh.vertices[tri.vtxj];
-    Vector C = mesh.vertices[tri.vtxk];
+    Vector A = mesh[0].vertices[tri.vtxi];
+    Vector B = mesh[0].vertices[tri.vtxj];
+    Vector C = mesh[0].vertices[tri.vtxk];
     Vector N = normalize(cross(A-B, A-C));
 
     if(dot(N, ray.d)==0) return NULLVEC;
@@ -140,7 +140,7 @@ sphereIpointP intersectList(Ray ray, vector<T> list, int skip=-1){
 
 sphereIpointP intersectAll(Ray ray,int skip=-1){
     sphereIpointP interS = intersectList<Sphere>(ray, scene, skip);
-    sphereIpointP interM = intersectList<TriangleIndices>(ray, mesh.indices, skip);
+    sphereIpointP interM = intersectList<TriangleIndices>(ray, mesh[0].indices, skip);
 
     if (interS.i==-1) return interM;
     if (interM.i==-1) return interS;
