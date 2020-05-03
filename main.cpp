@@ -11,7 +11,6 @@ int main(int argc, char *argv[]){
     buildScene();
 
     // lights
-    
     Vector lightSource(-10, 20, 40);
     int lightI = 100000; //max 1000000000
     Light light(lightSource, lightI, 5);
@@ -26,7 +25,7 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector color(0,0,0);
-            int amount = 1000;
+            int amount = 1;
             
             #pragma omp parallel for
             for (int k=0; k<amount; k++){
@@ -46,14 +45,14 @@ int main(int argc, char *argv[]){
                 
                 Vector direction = normalize(pixel-localCam.p);
                 Ray ray(localCam.p, direction);
-                sphereIpointP best = intersectAll(ray);
+                sphereIpointP best = intersectScene(ray);
 
                 if (best.i != -1){
-                    color += getColor(best.inter, best.i, light, 10, localCam.p);
+                    color += getColor(best.inter, best.i, light, 3, localCam.p);
                 }
             }
             
-            color = color/amount;
+            color = color/double(amount);
             color = gammaCor(color);
             
             image[(j*w+i)*3+0] = min(max(int(color[0]),0), 255);
