@@ -36,6 +36,16 @@ void buildScene(){
     mesh.readOBJ("model_cat/cat.obj");
     mesh.createBox();
     scene.push_back(mesh);
+
+    TriangleMesh green;
+    green.vertices.push_back(Vector(-50,-60,-10));
+    green.vertices.push_back(Vector(-50, 60,-10));
+    green.vertices.push_back(Vector( 50,-60,-10));
+    green.vertices.push_back(Vector( 50, 60,-10));
+    green.indices.push_back(TriangleIndices(1,2,3));
+    green.indices.push_back(TriangleIndices(2,1,0));
+    green.createBox();
+    scene.push_back(green);
 }
 
 Vector getPixCoord(double i, double j){
@@ -176,6 +186,16 @@ Vector normalTriangle(int i, int j){
 
 Vector colorTriangle(int i, int j){
     switch (i){
+    case 0:
+        return Vector(255,255,255);
+    case 1:
+        return Vector(0,255,0);
+    case 2:
+        return Vector(255,0,255);
+    case 3:
+        return Vector(255,0,0);
+    case 4:
+        return Vector(0,0,255);
     default:
         return Vector(255,255,255);
     }

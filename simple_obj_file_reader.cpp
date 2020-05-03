@@ -44,11 +44,10 @@ public:
 
 				Vector col;
 				if (sscanf(line, "v %lf %lf %lf %lf %lf %lf\n", &vec[0], &vec[1], &vec[2], &col[0], &col[1], &col[2]) == 6) {
-					//col[0] = std::min(1., std::max(0., col[0]));
-					//col[1] = std::min(1., std::max(0., col[1]));
-					//col[2] = std::min(1., std::max(0., col[2]));
-					col = Vector(min(1., max(0., col[0])), min(1., max(0., col[1])), min(1., max(0., col[2])));
-
+					col[0] = std::min(1., std::max(0., col[0]));
+					col[1] = std::min(1., std::max(0., col[1]));
+					col[2] = std::min(1., std::max(0., col[2]));
+					
 					vertices.push_back(vec);
 					vertexcolors.push_back(col);
 
@@ -190,7 +189,6 @@ public:
 
 		}
 		fclose(f);
-
 	}
 
 	std::vector<TriangleIndices> indices;
