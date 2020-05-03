@@ -1,9 +1,42 @@
 #include "helpers.cpp"
 
+struct mainFunction{
+    void operator()(int i, int j, Light light, int& R, int& G, int& B){
+        Vector color(0,0,0);
+        for (int k=0; k<amount; k++){
+            double tmpI = double(i);
+            double tmpJ = double(j);
+            boxMuller(tmpI, tmpJ);
+            Vector pixel = getPixCoord(tmpI, tmpJ);
+
+            double D = norm(cam.p - pixel);
+            D = cam.f*D/(D-cam.f);
+            Vector u = normalize(pixel-cam.p);
+            pixel = cam.p + D / abs(u[2]) * u;
+            Camera localCam = cam;
+            double r = random01()*localCam.R;
+            double omega = random01()*2*PI;
+            localCam.p = Vector(cam.p[0]+cos(omega)*r, cam.p[1]+sin(omega)*r, cam.p[2]);
+            
+            Vector direction = normalize(pixel-localCam.p); 
+            Ray ray(localCam.p, direction); 
+            sphereIpointP best = intersectScene(ray);
+
+            if (best.i != -1){
+                color += getColor(best.inter, best.i, light, depth, localCam.p); 
+            }
+        }
+        color = color/double(amount);
+        color = gammaCor(color);
+        
+        R = min(max(int(color[0]),0), 255);
+        G = min(max(int(color[1]),0), 255);
+        B = min(max(int(color[2]),0), 255);
+    }
+};
+
 int main(int argc, char *argv[]){
     int image[w*h*3];
-    int amount = 3000;
-    int depth = 10;
         
     auto start = std::chrono::high_resolution_clock::now(); 
 
@@ -23,46 +56,17 @@ int main(int argc, char *argv[]){
     for (int i=0; i<w*h*3; i++){
         image[i]=0;
     }
+    
+    vector<std::thread> threads(w*h);
 
-    #pragma omp parallel for
     for(int i=0; i<w; i++){
-        #pragma omp parallel for
         for(int j=0; j<h; j++){
-            Vector color(0,0,0);
-            
-            
-            #pragma omp parallel for
-            for (int k=0; k<amount; k++){
-                double tmpI = double(i);
-                double tmpJ = double(j);
-                boxMuller(tmpI, tmpJ);
-                Vector pixel = getPixCoord(tmpI, tmpJ);
+            threads[i] = std::thread(mainFunction(),
+                i, j, light, image[(j*w+i)*3+0], image[(j*w+i)*3+1], image[(j*w+i)*3+2]);
 
-                double D = norm(cam.p - pixel);
-                D = cam.f*D/(D-cam.f);
-                Vector u = normalize(pixel-cam.p);
-                pixel = cam.p + D / abs(u[2]) * u;
-                Camera localCam = cam;
-                double r = random01()*localCam.R;
-                double omega = random01()*2*PI;
-                localCam.p = Vector(cam.p[0]+cos(omega)*r, cam.p[1]+sin(omega)*r, cam.p[2]);
-                
-                Vector direction = normalize(pixel-localCam.p); 
-                Ray ray(localCam.p, direction); 
-                sphereIpointP best = intersectScene(ray);
-
-                if (best.i != -1){
-                    color += getColor(best.inter, best.i, light, depth, localCam.p); 
-                }
-            }
-            color = color/double(amount);
-            color = gammaCor(color);
-            
-            image[(j*w+i)*3+0] = min(max(int(color[0]),0), 255);
-            image[(j*w+i)*3+1] = min(max(int(color[1]),0), 255);
-            image[(j*w+i)*3+2] = min(max(int(color[2]),0), 255);                
         }
     }
+    std::for_each(threads.begin(),threads.end(), std::mem_fn(&std::thread::join));
 
     writePPM(w, h, image);
     print("Done");
