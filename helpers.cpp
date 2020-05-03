@@ -5,7 +5,6 @@
 
 const double gamma {2.2}; // usual: 2.2
 const double rgbCorrection = pow(255, (gamma-1)/gamma);
-const Vector NULLVEC(0,0,0);
 
 Camera cam;
 vector<TriangleMesh> scene;
@@ -35,6 +34,7 @@ void writePPM(int w, int h, int* image){
 void buildScene(){
     TriangleMesh mesh;
     mesh.readOBJ("model_cat/cat.obj");
+    mesh.createBox();
     scene.push_back(mesh);
 }
 
@@ -69,11 +69,50 @@ struct sphereIpointP{
     Vector inter = NULLVEC;
 };
 
+bool inBoundingBox(Ray ray, int i){
+    Vector minCorner = scene[i].boxCornerMin;
+    Vector maxCorner = scene[i].boxCornerMax;
+
+    if(minCorner<=ray.p && ray.p<=maxCorner) return true;
+
+    double t;
+    Vector inter;
+    //X plane
+    t = (minCorner[0]-ray.p[0]) / ray.d[0];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    t = (maxCorner[0]-ray.p[0]) / ray.d[0];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    //Y plane
+    t = (minCorner[1]-ray.p[1]) / ray.d[1];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    t = (maxCorner[1]-ray.p[1]) / ray.d[1];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    //Z plane
+    t = (minCorner[2]-ray.p[2]) / ray.d[2];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    t = (maxCorner[2]-ray.p[2]) / ray.d[2];
+    inter = ray.p+t*ray.d;
+    if(minCorner<=inter && inter<=maxCorner) return true;
+
+    return false;
+}
+
 sphereIpointP intersectMesh(Ray ray, int i){
     std::vector<TriangleIndices> mesh = scene[i].indices;
     sphereIpointP res;
     double closest = 0;
 
+    if(!inBoundingBox) return res;
     for(int j=0; j<int(mesh.size()); j++){
         TriangleIndices tmp = mesh[j];
         Vector A = scene[i].vertices[tmp.vtxi];
@@ -136,8 +175,11 @@ Vector normalTriangle(int i, int j){
 }
 
 Vector colorTriangle(int i, int j){
-    TriangleIndices tmp = scene[i].indices[j];
-    return Vector(255,255,255);
+    switch (i){
+    default:
+        return Vector(255,255,255);
+    }
+    
 }
 
 Vector lambertian(Vector p, int si, int sj, Light light){

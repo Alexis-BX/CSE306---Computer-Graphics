@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
                 sphereIpointP best = intersectScene(ray);
 
                 if (best.i != -1){
-                    color += getColor(best.inter, best.i, best.j, light, 10, localCam.p);
+                    color += getColor(best.inter, best.i, best.j, light, 5, localCam.p);
                 }
             }
             

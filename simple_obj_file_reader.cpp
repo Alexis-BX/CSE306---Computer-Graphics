@@ -198,6 +198,26 @@ public:
 	std::vector<Vector> normals;
 	std::vector<Vector> uvs;
 	std::vector<Vector> vertexcolors;
+
+	Vector boxCornerMin;
+	Vector boxCornerMax;
+
+	void createBox(){
+		boxCornerMin = NULLVEC;
+		boxCornerMax = NULLVEC;
+		#pragma omp parallel for
+		for(int i=0; i<int(vertices.size()); i++){
+			Vector p = vertices[i];
+			if(p[0]<boxCornerMin[0]) boxCornerMin[0] = p[0];
+			if(p[1]<boxCornerMin[1]) boxCornerMin[1] = p[1];
+			if(p[2]<boxCornerMin[2]) boxCornerMin[2] = p[2];
+
+			if(p[0]>boxCornerMax[0]) boxCornerMax[0] = p[0];
+			if(p[1]>boxCornerMax[1]) boxCornerMax[1] = p[1];
+			if(p[2]>boxCornerMax[2]) boxCornerMax[2] = p[2];
+		}
+
+	}
 	
 };
 
