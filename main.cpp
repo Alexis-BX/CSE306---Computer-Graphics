@@ -2,9 +2,11 @@
 
 int main(int argc, char *argv[]){
     int image[w*h*3];
-    int amount = 10;
-    int depth = 5;
+    int amount = 3000;
+    int depth = 10;
         
+    auto start = std::chrono::high_resolution_clock::now(); 
+
     // camera
     Vector camPoint = Vector(0, 0, 55);
     cam = Camera(camPoint, 60.);
@@ -13,7 +15,7 @@ int main(int argc, char *argv[]){
     buildScene();
 
     // lights
-    Vector lightSource(-10, 20, 40);
+    Vector lightSource(-10, 10, 20);
     int lightI = 100000; //max 1000000000
     Light light(lightSource, lightI, 5);
     //when working with more lights, make dedicated class (point+I) and list of sources
@@ -34,7 +36,7 @@ int main(int argc, char *argv[]){
                 double tmpI = double(i);
                 double tmpJ = double(j);
                 boxMuller(tmpI, tmpJ);
-                Vector pixel = getPixCoord(tmpI,tmpJ);
+                Vector pixel = getPixCoord(tmpI, tmpJ);
 
                 double D = norm(cam.p - pixel);
                 D = cam.f*D/(D-cam.f);
@@ -45,15 +47,14 @@ int main(int argc, char *argv[]){
                 double omega = random01()*2*PI;
                 localCam.p = Vector(cam.p[0]+cos(omega)*r, cam.p[1]+sin(omega)*r, cam.p[2]);
                 
-                Vector direction = normalize(pixel-localCam.p);
-                Ray ray(localCam.p, direction);
+                Vector direction = normalize(pixel-localCam.p); 
+                Ray ray(localCam.p, direction); 
                 sphereIpointP best = intersectScene(ray);
 
                 if (best.i != -1){
-                    color += getColor(best.inter, best.i, light, depth, localCam.p);
+                    color += getColor(best.inter, best.i, light, depth, localCam.p); 
                 }
             }
-            
             color = color/double(amount);
             color = gammaCor(color);
             
@@ -65,5 +66,9 @@ int main(int argc, char *argv[]){
 
     writePPM(w, h, image);
     print("Done");
+    auto stop = std::chrono::high_resolution_clock::now(); 
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    print("Execution time:");
+    print(duration.count()/1000/1000);
     return 0;
 }

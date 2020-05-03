@@ -52,10 +52,10 @@ void buildScene(){
     addSphere(-1000, 0, 0, 0, 255, 255, 940);
     addSphere(1000, 0, 0, 255, 255, 0, 940);
     addSphere(0, 0, 25, 255, 255, 255, 10);
-    addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
+    addSphere(-20, 0, 10, 100, 100, 100, 10, miror);
     //addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
     //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
-    addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
+    addSphere(10,0,30, 0, 1, 1.5, 10, transparent);
 
     //mesh.readOBJ("model_cat/cat.obj");
 }
@@ -196,7 +196,7 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
 
     double R = 1. - 4.*n1*n2/(n1*n1+2.*n1*n2+n2*n2);
     R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
-
+    
     if (random01() < R){
         return mirorSurface(p, si, light, depth+1, previous);
     }
@@ -305,6 +305,7 @@ Vector getColor(Vector p, int si, Light light, int depth, Vector previous){
     depth -= 1;
     switch (scene[si].m){
     case opaque: // lambertian or sphericalLight
+        //return (lambertian(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
         return (sphericalLight(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
     case miror:
         return mirorSurface(p, si, light, depth, previous);
