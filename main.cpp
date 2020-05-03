@@ -2,7 +2,11 @@
 
 int main(int argc, char *argv[]){
     int image[w*h*3];
-        
+    int amount = 5;
+    int depth = 5;
+
+    auto start = std::chrono::high_resolution_clock::now(); 
+
     // camera
     Vector camPoint = Vector(0, 0, 55);
     cam = Camera(camPoint, 60.);
@@ -26,7 +30,6 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector color(0,0,0);
-            int amount = 5;
             
             #pragma omp parallel for
             for (int k=0; k<amount; k++){
@@ -40,8 +43,8 @@ int main(int argc, char *argv[]){
                 Vector u = normalize(pixel-cam.p);
                 pixel = cam.p + D / abs(u[2]) * u;
                 Camera localCam = cam;
-                double r = random()*localCam.R;
-                double omega = random()*2*PI;
+                double r = random01()*localCam.R;
+                double omega = random01()*2*PI;
                 localCam.p = Vector(cam.p[0]+cos(omega)*r, cam.p[1]+sin(omega)*r, cam.p[2]);
                 
                 Vector direction = normalize(pixel-localCam.p);
@@ -49,7 +52,7 @@ int main(int argc, char *argv[]){
                 sphereIpointP best = intersectScene(ray);
 
                 if (best.i != -1){
-                    color += getColor(best.inter, best.i, best.j, light, 5, localCam.p);
+                    color += getColor(best.inter, best.i, best.j, light, depth, localCam.p);
                 }
             }
             
@@ -64,5 +67,9 @@ int main(int argc, char *argv[]){
 
     writePPM(w, h, image);
     print("Done");
+    auto stop = std::chrono::high_resolution_clock::now(); 
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    print("Execution time (seconds):");
+    print(duration.count()/1000/1000);
     return 0;
 }
