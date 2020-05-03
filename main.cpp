@@ -39,8 +39,8 @@ int main(int argc, char *argv[]){
                 Vector u = normalize(pixel-cam.p);
                 pixel = cam.p + D / abs(u[2]) * u;
                 Camera localCam = cam;
-                double r = random()*localCam.R;
-                double omega = random()*2*PI;
+                double r = random01()*localCam.R;
+                double omega = random01()*2*PI;
                 localCam.p = Vector(cam.p[0]+cos(omega)*r, cam.p[1]+sin(omega)*r, cam.p[2]);
                 
                 Vector direction = normalize(pixel-localCam.p);
