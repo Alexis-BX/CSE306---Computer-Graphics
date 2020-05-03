@@ -17,7 +17,8 @@ public:
         coord[2] += b[2];
         return *this;
     }
-    double coord[3];    
+    double coord[3];  
+    double& operator[](int i) {return coord[i];}  
     const double& operator[](int i) const {return coord[i];}
 
 };

@@ -3,8 +3,8 @@
 
 #include "simple_obj_file_reader.cpp"
 
-const double gamma {2.2}; // usual: 2.2
-const double rgbCorrection = pow(255, (gamma-1)/gamma);
+const double gammaConst {2.2}; // usual: 2.2
+const double rgbCorrection = pow(255, (gammaConst-1)/gammaConst);
 const Vector NULLVEC(0,0,0);
 
 Camera cam;
@@ -12,7 +12,7 @@ vector<Sphere> scene;
 TriangleMesh mesh;
 Vector getColor(Vector p, int si, Light light, int depth=10, Vector previous=cam.p);
 
-double random(){
+double random01(){
     return double(rand()) / double(RAND_MAX);
 }
 
@@ -197,9 +197,9 @@ Vector mirorSurface(Vector p, int si, Light light, int depth, Vector previous){
 }
 
 Vector gammaCor(Vector color){
-    double x = pow(color[0],1/gamma) * rgbCorrection;
-    double y = pow(color[1],1/gamma) * rgbCorrection;
-    double z = pow(color[2],1/gamma) * rgbCorrection;
+    double x = pow(color[0],1/gammaConst) * rgbCorrection;
+    double y = pow(color[1],1/gammaConst) * rgbCorrection;
+    double z = pow(color[2],1/gammaConst) * rgbCorrection;
     return Vector(x, y, z);
 }
 
@@ -230,7 +230,7 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
     double R = 1. - 4.*n1*n2/(n1*n1+2.*n1*n2+n2*n2);
     R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
 
-    if (random() < R){
+    if (random01() < R){
         return mirorSurface(p, si, light, depth+1, previous);
     }
     
@@ -272,8 +272,8 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
 }
 
 Vector randomVec(const Vector& n){
-    const double r1 = random();
-    const double r2 = random();
+    const double r1 = random01();
+    const double r2 = random01();
     const double x = cos(2.*PI*r1)*sqrt(1.-r2);
     const double y = sin(2.*PI*r1)*sqrt(1.-r2);
     const double z = sqrt(r2);
@@ -311,8 +311,8 @@ Vector indirectLight(Vector p, int si, Light light, int depth){
 }
 
 void boxMuller(double& x, double& y, double stdev=0.3){
-    const double r1 = random();
-    const double r2 = random();
+    const double r1 = random01();
+    const double r2 = random01();
     x = x+sqrt(-2*log(r1))*cos(2*PI*r2)*stdev;
     y = y+sqrt(-2*log(r1))*sin(2*PI*r2)*stdev;
 }
