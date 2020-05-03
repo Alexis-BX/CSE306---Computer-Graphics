@@ -49,6 +49,8 @@ void buildScene(){
     addSphere(0, -1000, 0, 0, 0, 255, 990);
     addSphere(0, 1000, 0, 255, 0, 0, 940);
     addSphere(0, 0, -1000, 0, 255, 0, 940);
+    addSphere(-1000, 0, 0, 0, 255, 255, 940);
+    addSphere(1000, 0, 0, 255, 255, 0, 940);
     addSphere(0, 0, 25, 255, 255, 255, 10);
     //addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
     addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
