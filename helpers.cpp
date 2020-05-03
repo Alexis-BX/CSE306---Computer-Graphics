@@ -49,11 +49,11 @@ void buildScene(){
     addSphere(0, -1000, 0, 0, 0, 255, 990);
     addSphere(0, 1000, 0, 255, 0, 0, 940);
     addSphere(0, 0, -1000, 0, 255, 0, 940);
-    //addSphere(0, 0, 25, 255, 255, 255, 10);
+    addSphere(0, 0, 25, 255, 255, 255, 10);
     //addSphere(-20, 0, 0, 100, 100, 100, 10, miror);
-    //addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
+    addHollowSphere(-20, 0, 0, 0, 1, 1.5, 10);
     //for transparents color: (transparency (0 opaque, 1 transparent), n1, n2)
-    //addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
+    addSphere(10, 0, 30, 0, 1, 1.5, 10, transparent);
 
     //mesh.readOBJ("model_cat/cat.obj");
 }
