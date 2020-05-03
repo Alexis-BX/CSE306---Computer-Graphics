@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
     print("Done");
     auto stop = std::chrono::high_resolution_clock::now(); 
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    print("Execution time:");
+    print("Execution time (seconds):");
     print(duration.count()/1000/1000);
     return 0;
 }
