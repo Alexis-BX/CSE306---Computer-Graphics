@@ -117,13 +117,14 @@ bool inBoundingBox(Ray ray, int i){
     return false;
 }
 
-sphereIpointP intersectMesh(Ray ray, int i){
+sphereIpointP intersectMesh(Ray ray, int i=-1, int sj=-1){
     std::vector<TriangleIndices> mesh = scene[i].indices;
     sphereIpointP res;
     double closest = 0;
 
     if(!inBoundingBox) return res;
     for(int j=0; j<int(mesh.size()); j++){
+        if(j=sj) continue;
         TriangleIndices tmp = mesh[j];
         Vector A = scene[i].vertices[tmp.vtxi];
         Vector B = scene[i].vertices[tmp.vtxj];
@@ -143,13 +144,13 @@ sphereIpointP intersectMesh(Ray ray, int i){
     return res;
 }
 
-sphereIpointP intersectScene(Ray ray,int skip=-1){
+sphereIpointP intersectScene(Ray ray, int skip=-1, int skipj=-1){
     sphereIpointP res;
     double closest = 0;
 
     for(int i=0; i<int(scene.size()); i++){
         if (i==skip) continue;
-        sphereIpointP tmp = intersectMesh(ray, i);
+        sphereIpointP tmp = intersectMesh(ray, i, skipj);
         if (tmp.i!=-1){
             double d = norm(cam.p-tmp.inter);
             if(d < closest || res.i==-1){
@@ -209,27 +210,27 @@ Vector lambertian(Vector p, int si, int sj, Light light){
     tmp = (light.I/(4.*PI*PI*d*d) * visibility(p, light.p, si) * max(dot(n, tmp/d), 0.)) * colorTriangle(si,sj);
     return min(tmp, Vector(255,255,255));
 }
-/*
-Vector mirorSurface(Vector p, int si, Light light, int depth, Vector previous){
+
+Vector mirorSurface(Vector p, int si, int sj, Light light, int depth, Vector previous){
     Vector omegaI = normalize(p-previous);
-    Vector n = normalize(p - scene[si].p);
+    Vector n = normalTriangle(si, sj);
     Vector omegaR = omegaI - 2 * dot(omegaI, n) * n;
     omegaR = normalize(omegaR);
 
     Ray ray(p, omegaR);
-    sphereIpointP best = intersectAll(ray);
+    sphereIpointP best = intersectScene(ray);
 
     if (best.i == -1) return NULLVEC;
-    return getColor(best.inter, best.i, light, depth, p);
+    return getColor(best.inter, best.i, best.j, light, depth, p);
 }
-*/
+
 Vector gammaCor(Vector color){
     double x = pow(color[0],1/gamma) * rgbCorrection;
     double y = pow(color[1],1/gamma) * rgbCorrection;
     double z = pow(color[2],1/gamma) * rgbCorrection;
     return Vector(x, y, z);
 }
-/*
+
 Vector intersectSelf(Sphere s, Ray r){
     Vector tmp = r.p-s.p;
     double t = dot(r.d, tmp);
@@ -246,19 +247,19 @@ Vector intersectSelf(Sphere s, Ray r){
     return r.p + t*r.d;
 }
 
-Vector refract(Vector p, int si, Light light, int depth, Vector previous){
-    double n1 = scene[si].c[1];
-    double n2 = scene[si].c[2];
+Vector refract(Vector p, int si, int sj, Light light, int depth, Vector previous){
+    double n1 = 1;
+    double n2 = 1.5;
 
     Vector omegaI = normalize(p-previous);
-    Vector n = normalize(p - scene[si].p);
+    Vector n = normalTriangle(si, sj);
     double tmpDot = dot(omegaI, n);
 
     double R = 1. - 4.*n1*n2/(n1*n1+2.*n1*n2+n2*n2);
     R = R + (1-R)*pow(1.-abs(tmpDot), 5.);
 
     if (random() < R){
-        return mirorSurface(p, si, light, depth+1, previous);
+        return mirorSurface(p, si, sj, light, depth, previous);
     }
     
     if (tmpDot>0){
@@ -272,7 +273,7 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
 
     double rad = 1-n12*n12*(1-tmpDot*tmpDot);
     if(rad<0){
-        return mirorSurface(p, si, light, depth+1, previous);
+        return mirorSurface(p, si, sj, light, depth, previous);
     }
 
     Vector omegaT = n12*(omegaI-tmpDot*n);
@@ -280,24 +281,13 @@ Vector refract(Vector p, int si, Light light, int depth, Vector previous){
     omegaT = normalize(omegaT);
     
     Ray ray(p, omegaT);
-    sphereIpointP best = intersectAll(ray, si);
-    Vector inter = intersectSelf(scene[si], ray);
-
-    if (inter!=NULLVEC){
-        if (best.i == -1) return getColor(inter, si, light, depth, p);
-        double d1 = norm(p-best.inter);
-        double d2 = norm(p-inter);
-        if(d2 < d1){
-            return getColor(inter, si, light, depth, p);
-        }
-    }
+    sphereIpointP best = intersectScene(ray, -1, sj);
     
-    if (best.i == -1)
-        return NULLVEC;
+    if (best.i == -1) return NULLVEC;
     
-    return getColor(best.inter, best.i, light, depth, p);
+    return getColor(best.inter, best.i, best.j, light, depth, p);
 }
-*/
+
 Vector randomVec(const Vector& n){
     const double r1 = random();
     const double r2 = random();
@@ -363,17 +353,17 @@ Vector sphericalLight(Vector p, int si, int sj, Light light){
 Vector getColor(Vector p, int si, int sj, Light light, int depth, Vector previous){
     if (p==previous || depth<=0 || p!=p) return NULLVEC;
     depth -= 1;
-    return (sphericalLight(p, si, sj, light) + colorTriangle(si,sj) * indirectLight(p, si, sj, light, depth-1) / 255) / 2;
-/*    switch (scene[si].m){
-    case opaque: // lambertian or sphericalLight
-        return (sphericalLight(p, si, light) + scene[si].c * indirectLight(p, si, light, depth-1) / 255) / 2;
-    case miror:
-        return mirorSurface(p, si, light, depth, previous);
-    case transparent:
-        return refract(p, si, light, depth, previous);
+//    return (sphericalLight(p, si, sj, light) + colorTriangle(si,sj) * indirectLight(p, si, sj, light, depth-1) / 255) / 2;
+    switch (si){
+    case 1: // lambertian or sphericalLight
+        return (sphericalLight(p, si, sj, light) + colorTriangle(si,sj) * indirectLight(p, si, sj, light, depth-1) / 255) / 2;
+    case 2:
+        return mirorSurface(p, si, sj, light, depth, previous);
+    case 0:
+        return refract(p, si, sj, light, depth, previous);
     default:
         return NULLVEC;
-    }*/
+    }
 }
 
 #endif

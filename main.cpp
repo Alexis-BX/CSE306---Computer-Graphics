@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
         #pragma omp parallel for
         for(int j=0; j<h; j++){
             Vector color(0,0,0);
-            int amount = 20;
+            int amount = 5;
             
             #pragma omp parallel for
             for (int k=0; k<amount; k++){
