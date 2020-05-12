@@ -16,23 +16,6 @@ double random01(){
     return double(rand()) / double(RAND_MAX);
 }
 
-void writePPM(int w, int h, int* image){
-    ofstream output;
-    output.open("pic.ppm");
-    output << "P3" << "\n";
-    output << w << " " << h << "\n";
-    output << "255\n";
-
-    for(int i=0; i<h; i++){
-        for(int j=0; j<w; j++){
-            int tmp = i*w*3 + j*3;
-            output << image[tmp] << " " << image[tmp+1] << " " << image[tmp+2] << "\n";
-        }
-    }
-
-    output.close();
-}
-
 void addSphere(double x, double y, double z, double r, double g, double b, double R, Materials m=opaque){
     Vector tmpPoint(x,y,z);
     Vector tmpColor(r,g,b);

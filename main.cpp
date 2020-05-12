@@ -1,4 +1,4 @@
-#include "helpers.cpp"
+#include "image.cpp"
 
 int main(int argc, char *argv[]){
     int image[w*h*3];

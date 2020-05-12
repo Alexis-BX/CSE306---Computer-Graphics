@@ -21,4 +21,9 @@ void print(T i){
     std::cout<<i<<std::endl;
 }
 
+template <typename T>
+int sizeList(T *a){
+    return int(sizeof(a)/sizeof(*a));
+}
+
 #endif
