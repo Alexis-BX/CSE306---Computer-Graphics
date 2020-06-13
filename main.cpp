@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
                 double D = norm(cam.p - pixel);
                 D = cam.f*D/(D-cam.f);
                 Vector u = normalize(pixel-cam.p);
-                pixel = cam.p + D / abs(u[2]) * u;
+                pixel = cam.p + D / std::abs(u[2]) * u;
                 Camera localCam = cam;
                 double r = random01()*localCam.R;
                 double omega = random01()*2*PI;
