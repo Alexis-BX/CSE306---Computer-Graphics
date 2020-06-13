@@ -49,8 +49,11 @@ void slicedOptimalTransport(int (&input)[], int model[]){
     #pragma omp parallel for
     for(int i=0; i<wh; i++){
         input[pairInput[i].second + 0] += (pairModel[i].first - pairInput[i].first) * randVec[0];
+        input[pairInput[i].second + 0] = min(255, max(0, int(input[pairInput[i].second + 0])));
         input[pairInput[i].second + 1] += (pairModel[i].first - pairInput[i].first) * randVec[1];
+        input[pairInput[i].second + 1] = min(255, max(0, int(input[pairInput[i].second + 1])));
         input[pairInput[i].second + 2] += (pairModel[i].first - pairInput[i].first) * randVec[2];
+        input[pairInput[i].second + 2] = min(255, max(0, int(input[pairInput[i].second + 2])));
     }
 }
 
@@ -60,8 +63,8 @@ void retargeting(int image[], int (&res)[], int width=w, int height=h){
     // setup of E(x,y)
     for (int i=0; i<width; i++){
         for (int j=0; j<height; j++){
-            intermediate[j*width+i]  = abs(image[((j+1)*width+i)*3+0]-image[((j-1)*width+i)*3+0] + image[((j+1)*width+i)*3+1]-image[((j-1)*width+i)*3+1] + image[((j+1)*width+i)*3+2]-image[((j-1)*width+i)*3+2]);
-            intermediate[j*width+i] += abs(image[(j*width+(i+1))*3+0]-image[(j*width+(i-1))*3+0] + image[(j*width+(i+1))*3+1]-image[(j*width+(i-1))*3+1] + image[(j*width+(i+1))*3+2]-image[(j*width+(i-1))*3+2]);
+            intermediate[j*width+i]  = std::abs(image[((j+1)*width+i)*3+0]-image[((j-1)*width+i)*3+0] + image[((j+1)*width+i)*3+1]-image[((j-1)*width+i)*3+1] + image[((j+1)*width+i)*3+2]-image[((j-1)*width+i)*3+2]);
+            intermediate[j*width+i] += std::abs(image[(j*width+(i+1))*3+0]-image[(j*width+(i-1))*3+0] + image[(j*width+(i+1))*3+1]-image[(j*width+(i-1))*3+1] + image[(j*width+(i+1))*3+2]-image[(j*width+(i-1))*3+2]);
         }
     }
 
