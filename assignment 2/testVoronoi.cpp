@@ -1,8 +1,14 @@
 #include "svg.cpp"
+#include <complex> 
 
 double rand01(){
     return double(rand()) / double(RAND_MAX);
 }
+
+double gauss(Vector x, Vector m, double s) {
+    return  exp(-norm2(m-x)/(2 * s * s)) / (sqrt(2 * M_PI) * s);
+}
+
 
 std::vector<Vector> tutte(std::vector<Vector> points, std::vector<std::vector<int>> adjcancy, std::vector<int> boundaryIndex) {
     int n = boundaryIndex.size();
@@ -35,14 +41,18 @@ std::vector<Vector> tutte(std::vector<Vector> points, std::vector<std::vector<in
 }
 
 int main(int argc, char *argv[]){
-    srand(0);
-
     int N = 100;
     std::vector<Vector> points(N);
+    std::vector<double> lambdas(N);
+    Vector center = Vector(0.5, 0.5, 0);
+    double sigma = 0.1;
     for(int i = 0; i < N; i ++) {
-        points[i] = Vector(rand01(), rand01(), rand01());
+        points[i] = Vector(rand01(), rand01(), 0);
+        lambdas[i] = gauss(points[i], center, sigma);
+        points[i][2] = lambdas[i];
     }
-    
+
+    // run semi-discrete optimal transport here with lambda and points from above
     std::vector<Polygon> voronois = vple(points);
     print("Done");
     save_svg(voronois, "res.svg");

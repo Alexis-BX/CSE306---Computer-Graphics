@@ -65,6 +65,10 @@ double norm(const Vector& v){
     return sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
 }
 
+double norm2(const Vector& v){
+    return v[0]*v[0]+v[1]*v[1]+v[2]*v[2];
+}
+
 Vector normalize(const Vector& v){
     if (norm(v)==0)
         print("Normalise null vector (division by 0)");
