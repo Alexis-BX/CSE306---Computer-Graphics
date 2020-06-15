@@ -1,4 +1,4 @@
-#include "vector.cpp"
+#include "../vector.cpp"
 
 class Polygon{
 public:
@@ -62,7 +62,10 @@ std::vector<Polygon> vple(std::vector<Vector> points){
                     ncell.add((std::abs(ijN) < e)? cell[(inter==1)?j:i] : cell[i]+(cell[j]-cell[i])*(t-dot(cell[i],N))/ijN);
                 }
             }
+            for(int i = 0; i < ncell.size(); i ++) 
+                ncell[i][2] = 0;
             cell = ncell;
+            
         }
         set[ic] = cell;
     }

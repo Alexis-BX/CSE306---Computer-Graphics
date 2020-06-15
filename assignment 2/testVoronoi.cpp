@@ -35,11 +35,12 @@ std::vector<Vector> tutte(std::vector<Vector> points, std::vector<std::vector<in
 }
 
 int main(int argc, char *argv[]){
-    
-    int N = 10;
+    srand(0);
+
+    int N = 100;
     std::vector<Vector> points(N);
     for(int i = 0; i < N; i ++) {
-        points[i] = Vector(rand01(), rand01(), 0);
+        points[i] = Vector(rand01(), rand01(), rand01());
     }
     
     std::vector<Polygon> voronois = vple(points);
